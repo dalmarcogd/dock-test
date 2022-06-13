@@ -1,0 +1,112 @@
+services:
+
+  dock-test-api:
+    depends_on:
+      - postgres
+      - database-migration
+      - redis
+      - otel-collector
+    image: dock-test-api:latest
+    build:
+      dockerfile: ./Dockerfile
+      context: .
+      target: build-local
+    container_name: dock-test-api
+    restart: unless-stopped
+    networks:
+      - current
+    ports:
+      - "8080:8080"
+    volumes:
+      - ".:/code"
+    environment:
+      DATABASE_URL: "$DATABASE_URL"
+      REDIS_URL: "$REDIS_URL"
+      OTEL_COLLECTOR_HOST: "$OTEL_COLLECTOR_HOST"
+      ENVIRONMENT: "$ENVIRONMENT"
+      SERVICE: "$SERVICE"
+      VERSION: "$VERSION"
+      HTTP_HOST: "$HTTP_HOST"
+      PORT: "$PORT"
+      DEBUG_PPROF: "$DEBUG_PPROF"
+    command: "go run ./cmd/api/main.go"
+
+  postgres:
+    image: postgres:13-alpine
+    container_name: postgres
+    restart: unless-stopped
+    networks:
+      - current
+    ports:
+      - "5432:5432"
+    command: [ "postgres", "-c", "log_statement=all", "-c", "log_destination=stderr" ]
+    environment:
+      POSTGRES_USER: dock-test
+      POSTGRES_PASSWORD: dock-test
+      POSTGRES_DB: dock-test
+
+  database-migration:
+    image: migrate/migrate
+    container_name: database-migration
+    restart: on-failure
+    depends_on:
+      - postgres
+    networks:
+      - current
+    volumes:
+      - ".:/code"
+    command: [ "-path", "/code/migrations/", "-database",  "$DATABASE_URL", "up" ]
+
+  redis:
+    image: redis:6
+    container_name: redis
+    restart: unless-stopped
+    networks:
+      - current
+    command: redis-server --save 60 1 --requirepass MDNcVb924a
+    ports:
+      - '6379:6379'
+
+  otel-collector:
+    image: otel/opentelemetry-collector:latest
+    container_name: otel-collector
+    restart: unless-stopped
+    command: [ "--config=/conf/otel-collector-config.yml", "--log-level=DEBUG" ]
+    volumes:
+      - ./otel-collector-config.yml:/conf/otel-collector-config.yml
+    ports:
+      - "9464:9464"
+      - "55680:55680"
+      - "55681:55681"
+    networks:
+      - current
+    depends_on:
+      - jaeger
+      - prometheus
+
+  jaeger:
+    image: jaegertracing/all-in-one
+    container_name: jaeger
+    restart: unless-stopped
+    networks:
+      - current
+    ports:
+      - "14268:14268"   # jaeger-collector HTTP server (tracer provider)
+      - "14250"
+      - "16686:16686"   # HTTP server (browser UI)
+
+  # Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - current
+    ports:
+      - "9090:9090"
+
+networks:
+  current:
+    name: current

@@ -1,0 +1,11 @@
+{
+  "name": "Docker Test Go",
+  "description": "Dock Test Go",
+  "keywords": [
+    "dock",
+    "test",
+    "go"
+  ],
+  "website": "https://github.com/dalmarcogd/dock-test",
+  "repository": "https://github.com/dalmarcogd/dock-test"
+}
