@@ -47,6 +47,7 @@ func NewGetByIDTransactionFunc(svc transactions.Service) GetByIDTransactionFunc 
 				ID:          stringers.UUIDEmpty(transaction.ID),
 				From:        stringers.UUIDEmpty(transaction.From),
 				To:          stringers.UUIDEmpty(transaction.To),
+				Type:        string(transaction.Type),
 				Amount:      transaction.Amount,
 				Description: transaction.Description,
 			},

@@ -13,31 +13,24 @@ import (
 )
 
 type (
-	CreateTransactionFunc echo.HandlerFunc
+	CreateP2PTransactionFunc echo.HandlerFunc
 
-	createTransaction struct {
+	createP2PTransaction struct {
 		From        string  `json:"from_account_id"`
 		To          string  `json:"to_account_id"`
 		Amount      float64 `json:"amount"`
 		Description string  `json:"description"`
 	}
-	createdTransaction struct {
-		ID          string  `json:"id"`
-		From        string  `json:"from_account_id,omitempty"`
-		To          string  `json:"to_account_id,omitempty"`
-		Amount      float64 `json:"amount"`
-		Description string  `json:"description"`
-	}
 )
 
-func NewCreateTransactionFunc(svc transactions.Service) CreateTransactionFunc {
+func NewCreateP2PTransactionFunc(svc transactions.Service) CreateP2PTransactionFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 
-		var trx createTransaction
+		var trx createP2PTransaction
 		err := c.Bind(&trx)
 		if err != nil {
-			zapctx.L(ctx).Error("create_transaction_handler_bind_error", zap.Error(err))
+			zapctx.L(ctx).Error("create_p2p_transaction_handler_bind_error", zap.Error(err))
 			return err
 		}
 
@@ -45,7 +38,7 @@ func NewCreateTransactionFunc(svc transactions.Service) CreateTransactionFunc {
 		if trx.From != "" {
 			fromID, err = uuid.Parse(trx.From)
 			if err != nil {
-				zapctx.L(ctx).Error("create_transaction_handler_parse_error", zap.Error(err))
+				zapctx.L(ctx).Error("create_p2p_transaction_handler_parse_error", zap.Error(err))
 				return echo.NewHTTPError(http.StatusUnprocessableEntity, "invalid from account id")
 			}
 		}
@@ -54,19 +47,19 @@ func NewCreateTransactionFunc(svc transactions.Service) CreateTransactionFunc {
 		if trx.To != "" {
 			toID, err = uuid.Parse(trx.To)
 			if err != nil {
-				zapctx.L(ctx).Error("create_transaction_handler_parse_error", zap.Error(err))
+				zapctx.L(ctx).Error("create_p2p_transaction_handler_parse_error", zap.Error(err))
 				return echo.NewHTTPError(http.StatusUnprocessableEntity, "invalid to account id")
 			}
 		}
 
-		transaction, err := svc.Create(ctx, transactions.Transaction{
+		transaction, err := svc.CreateP2P(ctx, transactions.Transaction{
 			From:        fromID,
 			To:          toID,
 			Amount:      trx.Amount,
 			Description: trx.Description,
 		})
 		if err != nil {
-			zapctx.L(ctx).Error("create_transaction_handler_service_error", zap.Error(err))
+			zapctx.L(ctx).Error("create_p2p_transaction_handler_service_error", zap.Error(err))
 			if errors.Is(err, transactions.ErrBalanceInsufficientFunds) {
 				return echo.NewHTTPError(http.StatusPreconditionFailed, err.Error())
 			} else if errors.Is(err, transactions.ErrFromAccountNotfound) || errors.Is(err, transactions.ErrToAccountNotfound) {
@@ -84,6 +77,7 @@ func NewCreateTransactionFunc(svc transactions.Service) CreateTransactionFunc {
 				ID:          stringers.UUIDEmpty(transaction.ID),
 				From:        stringers.UUIDEmpty(transaction.From),
 				To:          stringers.UUIDEmpty(transaction.To),
+				Type:        string(transaction.Type),
 				Amount:      transaction.Amount,
 				Description: transaction.Description,
 			},

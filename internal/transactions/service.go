@@ -18,16 +18,20 @@ import (
 
 var (
 	ErrTransactionNotFound                   = errors.New("no transaction found with these filters")
+	ErrFailLockAccount                       = errors.New("was not possible to lock account to process the operation")
 	ErrMultpleTransactionsFound              = errors.New("multiple transactions found with these filters")
 	ErrFromAccountToAccountShouldBeDifferent = errors.New("the from account and to account should not be equal")
 	ErrFromAccountNotfound                   = errors.New("the from account could be found")
 	ErrToAccountNotfound                     = errors.New("the to account could be found")
 	ErrGetAccountBalance                     = errors.New("received error when get the account balance")
 	ErrBalanceInsufficientFunds              = errors.New("insufficient funds to complete the transaction")
+	ErrAccountInactive                       = errors.New("the account involved in the transaction must be active")
 )
 
 type Service interface {
-	Create(ctx context.Context, transaction Transaction) (Transaction, error)
+	CreateCredit(ctx context.Context, transaction Transaction) (Transaction, error)
+	CreateDebit(ctx context.Context, transaction Transaction) (Transaction, error)
+	CreateP2P(ctx context.Context, transaction Transaction) (Transaction, error)
 	GetByID(ctx context.Context, id uuid.UUID) (Transaction, error)
 }
 
@@ -55,10 +59,85 @@ func NewService(
 	}
 }
 
-//nolint:funlen
-func (s service) Create(ctx context.Context, transaction Transaction) (Transaction, error) {
+func (s service) CreateCredit(ctx context.Context, transaction Transaction) (Transaction, error) {
 	ctx, span := s.tracer.Span(ctx)
 	defer span.End()
+
+	transaction.Type = CreditTransaction
+
+	var toAccount accounts.Account
+	if transaction.To != uuid.Nil {
+		var err error
+		toAccount, err = s.accountsSvs.GetByID(ctx, transaction.To)
+		if err != nil {
+			span.RecordError(err)
+
+			if !errors.Is(err, accounts.ErrAccountNotFound) {
+				zapctx.L(ctx).Error(
+					"transaction_service_to_acccount_check_error",
+					zap.Error(err),
+					zap.String("to", transaction.To.String()),
+				)
+			}
+			return Transaction{}, ErrToAccountNotfound
+		}
+	}
+
+	if toAccount.Status != accounts.ActiveStatus {
+		zapctx.L(ctx).Error(
+			"transaction_service_to_acccount_inactive_error",
+			zap.Error(ErrAccountInactive),
+			zap.String("to", transaction.To.String()),
+		)
+		span.RecordError(ErrAccountInactive)
+		return Transaction{}, ErrAccountInactive
+	}
+
+	return s.createCredit(ctx, transaction)
+}
+
+func (s service) CreateDebit(ctx context.Context, transaction Transaction) (Transaction, error) {
+	ctx, span := s.tracer.Span(ctx)
+	defer span.End()
+
+	transaction.Type = DebitTransaction
+
+	var fromAccount accounts.Account
+	if transaction.From != uuid.Nil {
+		var err error
+		fromAccount, err = s.accountsSvs.GetByID(ctx, transaction.From)
+		if err != nil {
+			span.RecordError(err)
+
+			if !errors.Is(err, accounts.ErrAccountNotFound) {
+				zapctx.L(ctx).Error(
+					"transaction_service_to_acccount_check_error",
+					zap.Error(err),
+					zap.String("from", transaction.From.String()),
+				)
+			}
+			return Transaction{}, ErrFromAccountNotfound
+		}
+	}
+
+	if fromAccount.Status != accounts.ActiveStatus {
+		zapctx.L(ctx).Error(
+			"transaction_service_to_acccount_inactive_error",
+			zap.Error(ErrAccountInactive),
+			zap.String("to", transaction.To.String()),
+		)
+		span.RecordError(ErrAccountInactive)
+		return Transaction{}, ErrAccountInactive
+	}
+
+	return s.createDebit(ctx, transaction)
+}
+
+func (s service) CreateP2P(ctx context.Context, transaction Transaction) (Transaction, error) {
+	ctx, span := s.tracer.Span(ctx)
+	defer span.End()
+
+	transaction.Type = P2PTransaction
 
 	if transaction.From == transaction.To {
 		zapctx.L(ctx).Error(
@@ -150,11 +229,13 @@ func (s service) createDebit(ctx context.Context, transaction Transaction) (Tran
 			}
 
 			transaction.ID = model.ID
+			return transaction, nil
 		} else {
 			return Transaction{}, ErrBalanceInsufficientFunds
 		}
 	}
-	return Transaction{}, nil
+
+	return Transaction{}, ErrFailLockAccount
 }
 
 func (s service) createCredit(ctx context.Context, transaction Transaction) (Transaction, error) {

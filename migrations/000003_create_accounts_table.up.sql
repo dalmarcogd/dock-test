@@ -10,4 +10,4 @@ CREATE TABLE IF NOT EXISTS accounts
     updated_at TIMESTAMPTZ  NULL
 );
 
-CREATE UNIQUE INDEX accounts_holder_number ON accounts (number, holder_id);
+    CREATE UNIQUE INDEX accounts_holder_number ON accounts (number, holder_id);

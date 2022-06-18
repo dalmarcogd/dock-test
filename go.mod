@@ -6,6 +6,7 @@ go 1.18
 require (
 	github.com/brianvoe/gofakeit/v6 v6.16.0
 	github.com/docker/go-connections v0.4.0
+	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/go-redis/redis/extra/redisotel/v8 v8.11.5
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/golang-migrate/migrate/v4 v4.15.2

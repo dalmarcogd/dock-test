@@ -6,3 +6,5 @@ CREATE TABLE IF NOT EXISTS holders
     created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     updated_at      TIMESTAMPTZ  NULL
 );
+
+CREATE UNIQUE INDEX holders_document_number ON holders (document_number);

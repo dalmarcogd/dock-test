@@ -11,32 +11,32 @@ import (
 )
 
 type (
-	GetByIDFunc echo.HandlerFunc
+	BlockByIDFunc echo.HandlerFunc
 
-	getByID struct {
+	blockByID struct {
 		ID string `param:"id"`
 	}
 )
 
-func NewGetByIDFunc(svc accounts.Service) GetByIDFunc {
+func NewBlockByIDFunc(svc accounts.Service) BlockByIDFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 
-		var get getByID
-		if err := c.Bind(&get); err != nil {
-			zapctx.L(ctx).Error("get_by_account_id_handler_bind_error", zap.Error(err))
+		var cls blockByID
+		if err := c.Bind(&cls); err != nil {
+			zapctx.L(ctx).Error("block_by_account_id_handler_bind_error", zap.Error(err))
 			return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
 		}
 
-		id, err := uuid.Parse(get.ID)
+		id, err := uuid.Parse(cls.ID)
 		if err != nil {
-			zapctx.L(ctx).Error("get_by_account_id_handler_bind_error", zap.Error(err))
+			zapctx.L(ctx).Error("block_by_account_id_handler_bind_error", zap.Error(err))
 			return echo.NewHTTPError(http.StatusUnprocessableEntity, "invalid id")
 		}
 
-		account, err := svc.GetByID(ctx, id)
+		account, err := svc.BlockByID(ctx, id)
 		if err != nil {
-			zapctx.L(ctx).Error("get_by_account_id_handler_service_error", zap.Error(err))
+			zapctx.L(ctx).Error("block_by_account_id_handler_service_error", zap.Error(err))
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 

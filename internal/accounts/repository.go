@@ -72,29 +72,38 @@ func (r repository) GetByFilter(ctx context.Context, filter accountFilter) ([]ac
 	ctx, span := r.tracer.Span(ctx)
 	defer span.End()
 
-	selectQuery := r.db.Replica().NewSelect().Model(&accountModel{})
+	selectQuery := r.db.Replica().
+		NewSelect().
+		ModelTableExpr("accounts AS a").
+		Join("JOIN holders AS h ON h.id = a.holder_id").
+		ColumnExpr("a.*, h.document_number AS holder_document_number")
+
 	if filter.ID.Valid {
-		selectQuery.Where("id = ?", filter.ID.UUID)
+		selectQuery.Where("a.id = ?", filter.ID.UUID)
 	}
 
 	if filter.Name != "" {
-		selectQuery.Where("name = ?", filter.Name)
+		selectQuery.Where("a.name = ?", filter.Name)
+	}
+
+	if filter.DocumentNumber != "" {
+		selectQuery.Where("h.document_number = ?", filter.DocumentNumber)
 	}
 
 	if filter.CreatedAtBegin.Valid {
-		selectQuery.Where("created_at >= ?", filter.CreatedAtBegin.Time)
+		selectQuery.Where("a.created_at >= ?", filter.CreatedAtBegin.Time)
 	}
 
 	if filter.CreatedAtEnd.Valid {
-		selectQuery.Where("created_at <= ?", filter.CreatedAtEnd.Time)
+		selectQuery.Where("a.created_at <= ?", filter.CreatedAtEnd.Time)
 	}
 
 	if filter.UpdatedAtBegin.Valid {
-		selectQuery.Where("updated_at >= ?", filter.UpdatedAtBegin.Time)
+		selectQuery.Where("a.updated_at >= ?", filter.UpdatedAtBegin.Time)
 	}
 
 	if filter.UpdatedAtEnd.Valid {
-		selectQuery.Where("updated_at <= ?", filter.UpdatedAtEnd.Time)
+		selectQuery.Where("a.updated_at <= ?", filter.UpdatedAtEnd.Time)
 	}
 
 	var accs []accountModel

@@ -1,46 +1,43 @@
-package accountsh
+package holdersh
 
 import (
 	"net/http"
 
-	"github.com/dalmarcogd/dock-test/internal/accounts"
+	"github.com/dalmarcogd/dock-test/internal/holders"
 	"github.com/dalmarcogd/dock-test/pkg/zapctx"
-	validation "github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 )
 
 type (
-	CreateAccountFunc echo.HandlerFunc
+	CreateHolderFunc echo.HandlerFunc
 
-	createAccount struct {
+	createHolder struct {
 		Name           string `json:"name"`
 		DocumentNumber string `json:"document_number"`
 	}
-	createdAccount struct {
+	createdHolder struct {
 		ID             string `json:"id"`
 		Name           string `json:"name"`
-		Agency         string `json:"agency"`
-		Number         string `json:"number"`
 		DocumentNumber string `json:"document_number"`
-		Status         string `json:"status"`
 	}
 )
 
-func (c createAccount) Validate() error {
+func (c createHolder) Validate() error {
 	return validation.ValidateStruct(&c,
 		validation.Field(&c.Name, validation.Required, validation.Length(1, 100)),
 		validation.Field(&c.DocumentNumber, validation.Required, validation.Length(11, 14)),
 	)
 }
 
-func NewCreateAccountFunc(svc accounts.Service) CreateAccountFunc {
+func NewCreateHolderFunc(svc holders.Service) CreateHolderFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 
-		var acc createAccount
+		var acc createHolder
 		if err := c.Bind(&acc); err != nil {
-			zapctx.L(ctx).Error("create_account_handler_bind_error", zap.Error(err))
+			zapctx.L(ctx).Error("create_holder_handler_bind_error", zap.Error(err))
 			return err
 		}
 
@@ -49,24 +46,21 @@ func NewCreateAccountFunc(svc accounts.Service) CreateAccountFunc {
 			return err
 		}
 
-		account, err := svc.Create(ctx, accounts.Account{
+		holder, err := svc.Create(ctx, holders.Holder{
 			Name:           acc.Name,
 			DocumentNumber: acc.DocumentNumber,
 		})
 		if err != nil {
-			zapctx.L(ctx).Error("create_account_handler_service_error", zap.Error(err))
+			zapctx.L(ctx).Error("create_holder_handler_service_error", zap.Error(err))
 			return err
 		}
 
 		return c.JSON(
 			http.StatusCreated,
-			createdAccount{
-				ID:             account.ID.String(),
-				Name:           account.Name,
-				Agency:         account.Agency,
-				Number:         account.Number,
-				DocumentNumber: account.DocumentNumber,
-				Status:         string(account.Status),
+			createdHolder{
+				ID:             holder.ID.String(),
+				Name:           holder.Name,
+				DocumentNumber: holder.DocumentNumber,
 			},
 		)
 	}
