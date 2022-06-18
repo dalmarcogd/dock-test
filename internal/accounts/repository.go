@@ -13,6 +13,7 @@ type Repository interface {
 	Create(ctx context.Context, model accountModel) (accountModel, error)
 	Update(ctx context.Context, model accountModel) (accountModel, error)
 	GetByFilter(ctx context.Context, filter accountFilter) ([]accountModel, error)
+	ListByFilter(ctx context.Context, filter ListFilter) (int, []accountModel, error)
 }
 
 type repository struct {
@@ -114,4 +115,46 @@ func (r repository) GetByFilter(ctx context.Context, filter accountFilter) ([]ac
 	}
 
 	return accs, nil
+}
+
+func (r repository) ListByFilter(ctx context.Context, filter ListFilter) (int, []accountModel, error) {
+	ctx, span := r.tracer.Span(ctx)
+	defer span.End()
+
+	page := filter.Page
+	if page == 0 {
+		page = 1
+	}
+
+	size := filter.Size
+	if size == 0 {
+		size = 20
+	}
+
+	selectQuery := r.db.Replica().
+		NewSelect().
+		ModelTableExpr("accounts AS a").
+		ColumnExpr("a.*, h.document_number AS holder_document_number").
+		Join("JOIN holders AS h ON h.id = a.holder_id").
+		Limit(size).
+		Offset((page - 1) * size)
+
+	if filter.DocumentNumber != "" {
+		selectQuery.Where("h.document_number = ?", filter.DocumentNumber)
+	}
+
+	if filter.Sort == 0 {
+		selectQuery.Order("created_at ASC")
+	} else if filter.Sort > 0 {
+		selectQuery.Order("created_at DESC")
+	}
+
+	var accs []accountModel
+	total, err := selectQuery.ScanAndCount(ctx, &accs)
+	if err != nil {
+		span.RecordError(err)
+		return 0, nil, err
+	}
+
+	return total, accs, nil
 }

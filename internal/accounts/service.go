@@ -22,10 +22,11 @@ var (
 
 type Service interface {
 	Create(ctx context.Context, account Account) (Account, error)
-	GetByID(ctx context.Context, id uuid.UUID) (Account, error)
 	BlockByID(ctx context.Context, id uuid.UUID) (Account, error)
 	UnblockByID(ctx context.Context, id uuid.UUID) (Account, error)
 	CloseByID(ctx context.Context, id uuid.UUID) (Account, error)
+	GetByID(ctx context.Context, id uuid.UUID) (Account, error)
+	List(ctx context.Context, filter ListFilter) (int, []Account, error)
 }
 
 type service struct {
@@ -75,32 +76,6 @@ func (s service) Create(ctx context.Context, account Account) (Account, error) {
 	account.ID = model.ID
 
 	return account, nil
-}
-
-func (s service) GetByID(ctx context.Context, id uuid.UUID) (Account, error) {
-	ctx, span := s.tracer.Span(ctx)
-	defer span.End()
-
-	models, err := s.repository.GetByFilter(ctx, accountFilter{ID: uuid.NullUUID{UUID: id, Valid: true}})
-	if err != nil {
-		zapctx.L(ctx).Error(
-			"account_service_get_repository_error",
-			zap.String("id", id.String()),
-			zap.Error(err),
-		)
-		span.RecordError(err)
-		return Account{}, err
-	}
-
-	if len(models) == 0 {
-		return Account{}, ErrAccountNotFound
-	}
-
-	if len(models) > 1 {
-		return Account{}, ErrMultpleAccountsFound
-	}
-
-	return newAccount(models[0]), nil
 }
 
 func (s service) BlockByID(ctx context.Context, id uuid.UUID) (Account, error) {
@@ -211,4 +186,52 @@ func (s service) CloseByID(ctx context.Context, id uuid.UUID) (Account, error) {
 
 	account.Status = model.Status
 	return account, nil
+}
+
+func (s service) GetByID(ctx context.Context, id uuid.UUID) (Account, error) {
+	ctx, span := s.tracer.Span(ctx)
+	defer span.End()
+
+	models, err := s.repository.GetByFilter(ctx, accountFilter{ID: uuid.NullUUID{UUID: id, Valid: true}})
+	if err != nil {
+		zapctx.L(ctx).Error(
+			"account_service_get_repository_error",
+			zap.String("id", id.String()),
+			zap.Error(err),
+		)
+		span.RecordError(err)
+		return Account{}, err
+	}
+
+	if len(models) == 0 {
+		return Account{}, ErrAccountNotFound
+	}
+
+	if len(models) > 1 {
+		return Account{}, ErrMultpleAccountsFound
+	}
+
+	return newAccount(models[0]), nil
+}
+
+func (s service) List(ctx context.Context, filter ListFilter) (int, []Account, error) {
+	ctx, span := s.tracer.Span(ctx)
+	defer span.End()
+
+	total, models, err := s.repository.ListByFilter(ctx, filter)
+	if err != nil {
+		zapctx.L(ctx).Error(
+			"account_service_list_repository_error",
+			zap.Error(err),
+		)
+		span.RecordError(err)
+		return 0, []Account{}, err
+	}
+
+	hdrs := make([]Account, len(models))
+	for i, model := range models {
+		hdrs[i] = newAccount(model)
+	}
+
+	return total, hdrs, nil
 }

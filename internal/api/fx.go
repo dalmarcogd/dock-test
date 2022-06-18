@@ -75,10 +75,11 @@ var Module = fx.Options(
 		holdersh.NewGetByIDHolderFunc,
 		holdersh.NewListHoldersFunc,
 		accountsh.NewCreateAccountFunc,
-		accountsh.NewGetByIDFunc,
 		accountsh.NewBlockByIDFunc,
 		accountsh.NewUnblockByIDFunc,
 		accountsh.NewCloseByIDFunc,
+		accountsh.NewGetByIDFunc,
+		accountsh.NewListAccountsFunc,
 		statementsh.NewListAccountStatementFunc,
 		balancesh.NewGetBalanceByAccountIDFunc,
 		transactionsh.NewCreateCreditTransactionFunc,
@@ -121,10 +122,11 @@ func runHTTPServer(
 	getByIDHolderFunc holdersh.GetByIDHolderFunc,
 	listHoldersFunc holdersh.ListHoldersFunc,
 	createAccountFunc accountsh.CreateAccountFunc,
-	getByIDAccountFunc accountsh.GetByIDFunc,
 	closeByIDFunc accountsh.CloseByIDFunc,
 	blockByIDFunc accountsh.BlockByIDFunc,
 	unblockByIDFunc accountsh.UnblockByIDFunc,
+	getByIDAccountFunc accountsh.GetByIDFunc,
+	listAccountsFunc accountsh.ListAccountsFunc,
 	createCreditTransactionFunc transactionsh.CreateCreditTransactionFunc,
 	createDebitTransactionFunc transactionsh.CreateDebitTransactionFunc,
 	createP2PTransactionFunc transactionsh.CreateP2PTransactionFunc,
@@ -141,6 +143,7 @@ func runHTTPServer(
 	v1.GET("/holders/:id", echo.HandlerFunc(getByIDHolderFunc))
 	v1.GET("/holders", echo.HandlerFunc(listHoldersFunc))
 	v1.POST("/accounts", echo.HandlerFunc(createAccountFunc))
+	v1.GET("/accounts", echo.HandlerFunc(listAccountsFunc))
 	v1.GET("/accounts/:id", echo.HandlerFunc(getByIDAccountFunc))
 	v1.PUT("/accounts/:id/blocks", echo.HandlerFunc(blockByIDFunc))
 	v1.PUT("/accounts/:id/unblocks", echo.HandlerFunc(unblockByIDFunc))

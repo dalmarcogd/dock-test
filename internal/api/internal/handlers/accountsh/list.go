@@ -1,18 +1,18 @@
-package holdersh
+package accountsh
 
 import (
 	"net/http"
 
-	"github.com/dalmarcogd/dock-test/internal/holders"
+	"github.com/dalmarcogd/dock-test/internal/accounts"
 	"github.com/dalmarcogd/dock-test/pkg/zapctx"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 )
 
 type (
-	ListHoldersFunc echo.HandlerFunc
+	ListAccountsFunc echo.HandlerFunc
 
-	listHolders struct {
+	listAccounts struct {
 		DocumentNumer string `query:"document_number"`
 		Sort          int    `query:"sort"`
 		Page          int    `query:"page"`
@@ -29,18 +29,18 @@ type (
 	}
 
 	listedHolder struct {
-		Pagination pagination      `json:"pagination"`
-		Holders    []createdHolder `json:"holders"`
+		Pagination pagination       `json:"pagination"`
+		Accounts   []createdAccount `json:"accounts"`
 	}
 )
 
-func NewListHoldersFunc(svc holders.Service) ListHoldersFunc {
+func NewListAccountsFunc(svc accounts.Service) ListAccountsFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 
-		var lsa listHolders
+		var lsa listAccounts
 		if err := c.Bind(&lsa); err != nil {
-			zapctx.L(ctx).Error("list_holder_handler_bind_error", zap.Error(err))
+			zapctx.L(ctx).Error("list_account_handler_bind_error", zap.Error(err))
 			return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
 		}
 
@@ -52,7 +52,7 @@ func NewListHoldersFunc(svc holders.Service) ListHoldersFunc {
 			lsa.Size = 20
 		}
 
-		total, hdlrs, err := svc.List(ctx, holders.ListFilter{
+		total, hdlrs, err := svc.List(ctx, accounts.ListFilter{
 			Sort:           lsa.Sort,
 			Page:           lsa.Page,
 			Size:           lsa.Size,
@@ -68,12 +68,15 @@ func NewListHoldersFunc(svc holders.Service) ListHoldersFunc {
 			totalPages++
 		}
 
-		cholders := make([]createdHolder, len(hdlrs))
-		for i, holder := range hdlrs {
-			cholders[i] = createdHolder{
-				ID:             holder.ID.String(),
-				Name:           holder.Name,
-				DocumentNumber: holder.DocumentNumber,
+		caccounts := make([]createdAccount, len(hdlrs))
+		for i, account := range hdlrs {
+			caccounts[i] = createdAccount{
+				ID:             account.ID.String(),
+				Name:           account.Name,
+				Agency:         account.Agency,
+				Number:         account.Number,
+				DocumentNumber: account.DocumentNumber,
+				Status:         string(account.Status),
 			}
 		}
 
@@ -84,9 +87,9 @@ func NewListHoldersFunc(svc holders.Service) ListHoldersFunc {
 				Size:        lsa.Size,
 				TotalItems:  total,
 				TotalPages:  totalPages,
-				TotalInPage: len(cholders),
+				TotalInPage: len(caccounts),
 			},
-			Holders: cholders,
+			Accounts: caccounts,
 		}
 
 		return c.JSON(http.StatusOK, listed)

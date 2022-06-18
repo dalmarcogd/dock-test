@@ -12,15 +12,20 @@ import (
 
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/dalmarcogd/dock-test/internal/accounts"
+	"github.com/dalmarcogd/dock-test/internal/holders"
 	"github.com/dalmarcogd/dock-test/pkg/database"
 	"github.com/dalmarcogd/dock-test/pkg/testingcontainers"
 	"github.com/dalmarcogd/dock-test/pkg/tracer"
+	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRepository(t *testing.T) {
 	ctx := context.Background()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
 	url, closeFunc, err := testingcontainers.NewPostgresContainer()
 	assert.NoError(t, err)
@@ -36,7 +41,9 @@ func TestRepository(t *testing.T) {
 	db, err := database.New(tracer.NewNoop(), url, url)
 	assert.NoError(t, err)
 
-	accSvc := accounts.NewService(tracer.NewNoop(), accounts.NewRepository(tracer.NewNoop(), db))
+	holdersMock := holders.NewMockRepository(ctrl)
+
+	accSvc := accounts.NewService(tracer.NewNoop(), accounts.NewRepository(tracer.NewNoop(), db), holdersMock)
 
 	account1, err := accSvc.Create(ctx, accounts.Account{Name: gofakeit.Name()})
 	assert.NoError(t, err)

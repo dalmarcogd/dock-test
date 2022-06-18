@@ -23,3 +23,10 @@ func newAccount(model accountModel) Account {
 		Status:         model.Status,
 	}
 }
+
+type ListFilter struct {
+	Sort           int
+	Page           int
+	Size           int
+	DocumentNumber string
+}

@@ -18,3 +18,6 @@ mockgen -source pkg/tracer/tracer.go -destination pkg/tracer/tracer_mock.go -pac
 
 mockgen -source internal/balances/service.go -destination internal/balances/service_mock.go -package balances Service
 
+# mocks to internal/holders
+
+mockgen -source internal/holders/repository.go -destination internal/holders/repository_mock.go -package holders Repository

@@ -10,6 +10,7 @@ import (
 	"github.com/dalmarcogd/dock-test/internal/accounts"
 	"github.com/dalmarcogd/dock-test/internal/balances"
 	"github.com/dalmarcogd/dock-test/pkg/distlock"
+	"github.com/dalmarcogd/dock-test/pkg/redis"
 	"github.com/dalmarcogd/dock-test/pkg/tracer"
 	"github.com/dalmarcogd/dock-test/pkg/zapctx"
 	"github.com/google/uuid"
@@ -41,6 +42,7 @@ type service struct {
 	locker      distlock.DistLock
 	accountsSvs accounts.Service
 	balancesSvs balances.Service
+	redis       redis.Client
 }
 
 func NewService(
@@ -49,6 +51,7 @@ func NewService(
 	l distlock.DistLock,
 	as accounts.Service,
 	bs balances.Service,
+	redis redis.Client,
 ) Service {
 	return service{
 		tracer:      t,
@@ -56,6 +59,7 @@ func NewService(
 		locker:      l,
 		accountsSvs: as,
 		balancesSvs: bs,
+		redis:       redis,
 	}
 }
 
@@ -65,32 +69,10 @@ func (s service) CreateCredit(ctx context.Context, transaction Transaction) (Tra
 
 	transaction.Type = CreditTransaction
 
-	var toAccount accounts.Account
-	if transaction.To != uuid.Nil {
-		var err error
-		toAccount, err = s.accountsSvs.GetByID(ctx, transaction.To)
-		if err != nil {
-			span.RecordError(err)
-
-			if !errors.Is(err, accounts.ErrAccountNotFound) {
-				zapctx.L(ctx).Error(
-					"transaction_service_to_acccount_check_error",
-					zap.Error(err),
-					zap.String("to", transaction.To.String()),
-				)
-			}
-			return Transaction{}, ErrToAccountNotfound
-		}
-	}
-
-	if toAccount.Status != accounts.ActiveStatus {
-		zapctx.L(ctx).Error(
-			"transaction_service_to_acccount_inactive_error",
-			zap.Error(ErrAccountInactive),
-			zap.String("to", transaction.To.String()),
-		)
-		span.RecordError(ErrAccountInactive)
-		return Transaction{}, ErrAccountInactive
+	err := s.checkAccount(ctx, transaction.To)
+	if err != nil {
+		span.RecordError(err)
+		return Transaction{}, err
 	}
 
 	return s.createCredit(ctx, transaction)
@@ -102,32 +84,10 @@ func (s service) CreateDebit(ctx context.Context, transaction Transaction) (Tran
 
 	transaction.Type = DebitTransaction
 
-	var fromAccount accounts.Account
-	if transaction.From != uuid.Nil {
-		var err error
-		fromAccount, err = s.accountsSvs.GetByID(ctx, transaction.From)
-		if err != nil {
-			span.RecordError(err)
-
-			if !errors.Is(err, accounts.ErrAccountNotFound) {
-				zapctx.L(ctx).Error(
-					"transaction_service_to_acccount_check_error",
-					zap.Error(err),
-					zap.String("from", transaction.From.String()),
-				)
-			}
-			return Transaction{}, ErrFromAccountNotfound
-		}
-	}
-
-	if fromAccount.Status != accounts.ActiveStatus {
-		zapctx.L(ctx).Error(
-			"transaction_service_to_acccount_inactive_error",
-			zap.Error(ErrAccountInactive),
-			zap.String("to", transaction.To.String()),
-		)
-		span.RecordError(ErrAccountInactive)
-		return Transaction{}, ErrAccountInactive
+	err := s.checkAccount(ctx, transaction.From)
+	if err != nil {
+		span.RecordError(err)
+		return Transaction{}, err
 	}
 
 	return s.createDebit(ctx, transaction)
@@ -150,54 +110,50 @@ func (s service) CreateP2P(ctx context.Context, transaction Transaction) (Transa
 		return Transaction{}, ErrFromAccountToAccountShouldBeDifferent
 	}
 
-	var fromAccount, toAccount accounts.Account
-	if transaction.From != uuid.Nil {
-		var err error
-		fromAccount, err = s.accountsSvs.GetByID(ctx, transaction.From)
-		if err != nil {
-			span.RecordError(err)
+	err := s.checkAccount(ctx, transaction.From)
+	if err != nil {
+		span.RecordError(err)
+		return Transaction{}, err
+	}
 
-			if !errors.Is(err, accounts.ErrAccountNotFound) {
-				zapctx.L(ctx).Error(
-					"transaction_service_to_acccount_check_error",
-					zap.Error(err),
-					zap.String("from", transaction.From.String()),
-				)
-			}
-			return Transaction{}, ErrFromAccountNotfound
+	err = s.checkAccount(ctx, transaction.To)
+	if err != nil {
+		span.RecordError(err)
+		return Transaction{}, err
+	}
+
+	return s.createDebit(ctx, transaction)
+}
+
+func (s service) checkAccount(ctx context.Context, accountID uuid.UUID) error {
+	ctx, span := s.tracer.Span(ctx)
+	defer span.End()
+
+	toAccount, err := s.accountsSvs.GetByID(ctx, accountID)
+	if err != nil {
+		span.RecordError(err)
+
+		if !errors.Is(err, accounts.ErrAccountNotFound) {
+			zapctx.L(ctx).Error(
+				"transaction_service_acccount_check_error",
+				zap.Error(err),
+				zap.String("account_id", accountID.String()),
+			)
 		}
+		return ErrToAccountNotfound
 	}
 
-	if transaction.To != uuid.Nil {
-		var err error
-		toAccount, err = s.accountsSvs.GetByID(ctx, transaction.To)
-		if err != nil {
-			span.RecordError(err)
-
-			if !errors.Is(err, accounts.ErrAccountNotFound) {
-				zapctx.L(ctx).Error(
-					"transaction_service_to_acccount_check_error",
-					zap.Error(err),
-					zap.String("to", transaction.To.String()),
-				)
-			}
-			return Transaction{}, ErrToAccountNotfound
-		}
+	if toAccount.Status != accounts.ActiveStatus {
+		zapctx.L(ctx).Error(
+			"transaction_service_acccount_inactive_error",
+			zap.Error(ErrAccountInactive),
+			zap.String("account_id", accountID.String()),
+		)
+		span.RecordError(ErrAccountInactive)
+		return ErrAccountInactive
 	}
 
-	zapctx.L(ctx).Info(
-		"transactions_create_accounts",
-		zap.String("from_account", fromAccount.ID.String()),
-		zap.String("to_account", toAccount.ID.String()),
-	)
-
-	if fromAccount.ID != uuid.Nil {
-		return s.createDebit(ctx, transaction)
-	} else if fromAccount.ID == uuid.Nil && toAccount.ID != uuid.Nil {
-		return s.createCredit(ctx, transaction)
-	}
-
-	return transaction, nil
+	return nil
 }
 
 func (s service) createDebit(ctx context.Context, transaction Transaction) (Transaction, error) {
@@ -220,7 +176,7 @@ func (s service) createDebit(ctx context.Context, transaction Transaction) (Tran
 			return Transaction{}, ErrGetAccountBalance
 		}
 
-		if (accountBalance.CurrentBalance - transaction.Amount) > 0 {
+		if (accountBalance.CurrentBalance - transaction.Amount) >= 0 {
 			model, err := s.repository.Create(ctx, newTransactionModel(transaction))
 			if err != nil {
 				zapctx.L(ctx).Error("transaction_service_create_repository_error", zap.Error(err))
