@@ -67,6 +67,24 @@ services:
     ports:
       - '6379:6379'
 
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    restart: unless-stopped
+    container_name: redis-commander
+    depends_on:
+      - redis
+    environment:
+      REDIS_HOSTS: redis
+      REDIS_HOST: redis
+      REDIS_PORT: redis:6379
+      REDIS_PASSWORD: "MDNcVb924a"
+      HTTP_USER: root
+      HTTP_PASSWORD: root
+    networks:
+      - current
+    ports:
+      - 8081:8081
+
   otel-collector:
     image: otel/opentelemetry-collector:latest
     container_name: otel-collector

@@ -10,10 +10,10 @@ import (
 )
 
 type Repository interface {
-	Create(ctx context.Context, model holderModel) (holderModel, error)
-	Update(ctx context.Context, model holderModel) (holderModel, error)
-	GetByFilter(ctx context.Context, filter HolderFilter) ([]holderModel, error)
-	ListByFilter(ctx context.Context, filter ListFilter) (int, []holderModel, error)
+	Create(ctx context.Context, model HolderModel) (HolderModel, error)
+	Update(ctx context.Context, model HolderModel) (HolderModel, error)
+	GetByFilter(ctx context.Context, filter HolderFilter) ([]HolderModel, error)
+	ListByFilter(ctx context.Context, filter ListFilter) (int, []HolderModel, error)
 }
 
 type repository struct {
@@ -28,7 +28,7 @@ func NewRepository(t tracer.Tracer, db database.Database) Repository {
 	}
 }
 
-func (r repository) Create(ctx context.Context, model holderModel) (holderModel, error) {
+func (r repository) Create(ctx context.Context, model HolderModel) (HolderModel, error) {
 	ctx, span := r.tracer.Span(ctx)
 	defer span.End()
 
@@ -42,13 +42,13 @@ func (r repository) Create(ctx context.Context, model holderModel) (holderModel,
 		Exec(ctx)
 	if err != nil {
 		span.RecordError(err)
-		return holderModel{}, err
+		return HolderModel{}, err
 	}
 
 	return model, nil
 }
 
-func (r repository) Update(ctx context.Context, model holderModel) (holderModel, error) {
+func (r repository) Update(ctx context.Context, model HolderModel) (HolderModel, error) {
 	ctx, span := r.tracer.Span(ctx)
 	defer span.End()
 
@@ -63,17 +63,17 @@ func (r repository) Update(ctx context.Context, model holderModel) (holderModel,
 		Exec(ctx)
 	if err != nil {
 		span.RecordError(err)
-		return holderModel{}, err
+		return HolderModel{}, err
 	}
 
 	return model, nil
 }
 
-func (r repository) GetByFilter(ctx context.Context, filter HolderFilter) ([]holderModel, error) {
+func (r repository) GetByFilter(ctx context.Context, filter HolderFilter) ([]HolderModel, error) {
 	ctx, span := r.tracer.Span(ctx)
 	defer span.End()
 
-	selectQuery := r.db.Replica().NewSelect().Model(&holderModel{})
+	selectQuery := r.db.Replica().NewSelect().Model(&HolderModel{})
 	if filter.ID.Valid {
 		selectQuery.Where("id = ?", filter.ID.UUID)
 	}
@@ -102,7 +102,7 @@ func (r repository) GetByFilter(ctx context.Context, filter HolderFilter) ([]hol
 		selectQuery.Where("updated_at <= ?", filter.UpdatedAtEnd.Time)
 	}
 
-	var accs []holderModel
+	var accs []HolderModel
 	err := selectQuery.Scan(ctx, &accs)
 	if err != nil {
 		span.RecordError(err)
@@ -112,7 +112,7 @@ func (r repository) GetByFilter(ctx context.Context, filter HolderFilter) ([]hol
 	return accs, nil
 }
 
-func (r repository) ListByFilter(ctx context.Context, filter ListFilter) (int, []holderModel, error) {
+func (r repository) ListByFilter(ctx context.Context, filter ListFilter) (int, []HolderModel, error) {
 	ctx, span := r.tracer.Span(ctx)
 	defer span.End()
 
@@ -128,7 +128,7 @@ func (r repository) ListByFilter(ctx context.Context, filter ListFilter) (int, [
 
 	selectQuery := r.db.Replica().
 		NewSelect().
-		Model(&holderModel{}).
+		Model(&HolderModel{}).
 		Limit(size).
 		Offset((page - 1) * size)
 
@@ -142,7 +142,7 @@ func (r repository) ListByFilter(ctx context.Context, filter ListFilter) (int, [
 		selectQuery.Order("created_at DESC")
 	}
 
-	var accs []holderModel
+	var accs []HolderModel
 	total, err := selectQuery.ScanAndCount(ctx, &accs)
 	if err != nil {
 		span.RecordError(err)

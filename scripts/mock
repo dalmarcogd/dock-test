@@ -21,3 +21,11 @@ mockgen -source internal/balances/service.go -destination internal/balances/serv
 # mocks to internal/holders
 
 mockgen -source internal/holders/repository.go -destination internal/holders/repository_mock.go -package holders Repository
+
+# mocks to internal/accounts
+
+mockgen -source internal/accounts/repository.go -destination internal/accounts/repository_mock.go -package accounts Repository
+
+# mocks to internal/transactions
+
+mockgen -source internal/transactions/repository.go -destination internal/transactions/repository_mock.go -package transactions Repository

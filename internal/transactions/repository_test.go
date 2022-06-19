@@ -12,7 +12,9 @@ import (
 
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/dalmarcogd/dock-test/internal/accounts"
+	"github.com/dalmarcogd/dock-test/internal/balances"
 	"github.com/dalmarcogd/dock-test/internal/holders"
+	"github.com/dalmarcogd/dock-test/internal/statements"
 	"github.com/dalmarcogd/dock-test/pkg/database"
 	"github.com/dalmarcogd/dock-test/pkg/testingcontainers"
 	"github.com/dalmarcogd/dock-test/pkg/tracer"
@@ -41,15 +43,41 @@ func TestRepository(t *testing.T) {
 	db, err := database.New(tracer.NewNoop(), url, url)
 	assert.NoError(t, err)
 
-	holdersMock := holders.NewMockRepository(ctrl)
-
-	accSvc := accounts.NewService(tracer.NewNoop(), accounts.NewRepository(tracer.NewNoop(), db), holdersMock)
-
-	account1, err := accSvc.Create(ctx, accounts.Account{Name: gofakeit.Name()})
+	holdersRepo := holders.NewRepository(tracer.NewNoop(), db)
+	holderModel := holders.HolderModel{
+		ID:             uuid.New(),
+		Name:           gofakeit.Name(),
+		DocumentNumber: gofakeit.SSN(),
+	}
+	holderModel, err = holdersRepo.Create(ctx, holderModel)
 	assert.NoError(t, err)
 
-	account2, err := accSvc.Create(ctx, accounts.Account{Name: gofakeit.Name()})
+	accSvc := accounts.NewService(tracer.NewNoop(), accounts.NewRepository(tracer.NewNoop(), db), holdersRepo)
+
+	account1, err := accSvc.Create(ctx, accounts.Account{
+		ID:             uuid.New(),
+		Name:           gofakeit.Name(),
+		Agency:         "0001",
+		Number:         "123456",
+		DocumentNumber: holderModel.DocumentNumber,
+		HolderID:       holderModel.ID,
+		Status:         accounts.ActiveStatus,
+	})
 	assert.NoError(t, err)
+
+	account2, err := accSvc.Create(ctx, accounts.Account{
+		ID:             uuid.New(),
+		Name:           gofakeit.Name(),
+		Agency:         "0001",
+		Number:         "123456",
+		DocumentNumber: holderModel.DocumentNumber,
+		HolderID:       holderModel.ID,
+		Status:         accounts.ActiveStatus,
+	})
+	assert.NoError(t, err)
+
+	balanceRepo := balances.NewRepository(tracer.NewNoop(), db)
+	statementRepo := statements.NewRepository(tracer.NewNoop(), db)
 
 	repo := NewRepository(tracer.NewNoop(), db)
 
@@ -185,5 +213,37 @@ func TestRepository(t *testing.T) {
 		})
 		assert.NoError(t, err)
 		assert.Len(t, trxs, 5)
+	})
+
+	t.Run("check accounts balance", func(t *testing.T) {
+		accountBalance1, err := balanceRepo.GetByAccountID(ctx, account1.ID)
+		assert.NoError(t, err)
+		assert.Equal(t, float64(30), accountBalance1.Balance)
+
+		accountBalance2, err := balanceRepo.GetByAccountID(ctx, account2.ID)
+		assert.NoError(t, err)
+		assert.Equal(t, float64(120), accountBalance2.Balance)
+	})
+
+	t.Run("check accounts statement", func(t *testing.T) {
+		total, stats, err := statementRepo.ListByFilter(ctx, statements.StatementFilter{
+			AccountID:      account1.ID,
+			CreatedAtBegin: time.Now().Add(-1 * time.Hour),
+			CreatedAtEnd:   time.Now(),
+		})
+
+		assert.NoError(t, err)
+		assert.Equal(t, 3, total)
+		assert.Len(t, stats, 3)
+
+		total, stats, err = statementRepo.ListByFilter(ctx, statements.StatementFilter{
+			AccountID:      account2.ID,
+			CreatedAtBegin: time.Now().Add(-1 * time.Hour),
+			CreatedAtEnd:   time.Now(),
+		})
+
+		assert.NoError(t, err)
+		assert.Equal(t, 3, total)
+		assert.Len(t, stats, 3)
 	})
 }

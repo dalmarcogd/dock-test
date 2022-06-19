@@ -93,7 +93,7 @@ func TestRepository(t *testing.T) {
 		assert.Equal(t, holder.Name, created.Name)
 		assert.Equal(t, holder.DocumentNumber, created.DocumentNumber)
 
-		rst, err := repo.GetByFilter(ctx, holderFilter{
+		rst, err := repo.GetByFilter(ctx, HolderFilter{
 			ID: uuid.NullUUID{
 				UUID:  created.ID,
 				Valid: true,
@@ -103,14 +103,14 @@ func TestRepository(t *testing.T) {
 		assert.Len(t, rst, 1)
 		assert.Equal(t, created, rst[0])
 
-		rst, err = repo.GetByFilter(ctx, holderFilter{
+		rst, err = repo.GetByFilter(ctx, HolderFilter{
 			Name: created.Name,
 		})
 		assert.NoError(t, err)
 		assert.Len(t, rst, 1)
 		assert.Equal(t, created, rst[0])
 
-		rst, err = repo.GetByFilter(ctx, holderFilter{
+		rst, err = repo.GetByFilter(ctx, HolderFilter{
 			CreatedAtBegin: database.NullTime{
 				Time:  created.CreatedAt.Add(-time.Hour * 1),
 				Valid: true,
@@ -124,7 +124,7 @@ func TestRepository(t *testing.T) {
 		assert.Len(t, rst, 3)
 		assert.Equal(t, created, rst[2])
 
-		rst, err = repo.GetByFilter(ctx, holderFilter{
+		rst, err = repo.GetByFilter(ctx, HolderFilter{
 			UpdatedAtBegin: database.NullTime{
 				Time:  time.Now().UTC().Add(-time.Hour * 1),
 				Valid: true,
@@ -140,7 +140,7 @@ func TestRepository(t *testing.T) {
 	})
 
 	t.Run("holder not found searching for these filters", func(t *testing.T) {
-		rst, err := repo.GetByFilter(ctx, holderFilter{
+		rst, err := repo.GetByFilter(ctx, HolderFilter{
 			ID: uuid.NullUUID{
 				UUID:  uuid.New(),
 				Valid: true,

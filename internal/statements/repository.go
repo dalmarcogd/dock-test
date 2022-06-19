@@ -8,7 +8,7 @@ import (
 )
 
 type Repository interface {
-	ListByFilter(ctx context.Context, filter statementFilter) (int, []statementModel, error)
+	ListByFilter(ctx context.Context, filter StatementFilter) (int, []statementModel, error)
 }
 
 type repository struct {
@@ -23,7 +23,7 @@ func NewRepository(t tracer.Tracer, db database.Database) Repository {
 	}
 }
 
-func (r repository) ListByFilter(ctx context.Context, filter statementFilter) (int, []statementModel, error) {
+func (r repository) ListByFilter(ctx context.Context, filter StatementFilter) (int, []statementModel, error) {
 	ctx, span := r.tracer.Span(ctx)
 	defer span.End()
 

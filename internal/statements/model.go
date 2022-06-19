@@ -22,7 +22,7 @@ type (
 		CreatedAt       time.Time `bun:"created_at"`
 	}
 
-	statementFilter struct {
+	StatementFilter struct {
 		Page           int
 		Size           int
 		Sort           int

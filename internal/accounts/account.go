@@ -8,7 +8,7 @@ type Account struct {
 	Agency         string
 	Number         string
 	DocumentNumber string
-	HolderID       string
+	HolderID       uuid.UUID
 	Status         Status
 }
 

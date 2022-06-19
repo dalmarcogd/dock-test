@@ -8,7 +8,7 @@ import (
 	"github.com/uptrace/bun"
 )
 
-type holderModel struct {
+type HolderModel struct {
 	bun.BaseModel `bun:"table:holders"`
 
 	ID             uuid.UUID `bun:"id,pk"`
@@ -18,8 +18,8 @@ type holderModel struct {
 	UpdatedAt      time.Time `bun:"updated_at,nullzero"`
 }
 
-func newHolderModel(h Holder) holderModel {
-	return holderModel{
+func newHolderModel(h Holder) HolderModel {
+	return HolderModel{
 		ID:             h.ID,
 		Name:           h.Name,
 		DocumentNumber: h.DocumentNumber,

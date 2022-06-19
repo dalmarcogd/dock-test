@@ -64,7 +64,7 @@ func (s service) Create(ctx context.Context, account Account) (Account, error) {
 
 	account.Agency = "0001"
 	account.Number = stringer.GenerateCode([]rune(AccountNumberVariants), AccountNumberSize)
-	account.HolderID = hds[0].ID.String()
+	account.HolderID = hds[0].ID
 	account.Status = ActiveStatus
 
 	model, err := s.repository.Create(ctx, newAccountModel(account))

@@ -28,7 +28,7 @@ type accountModel struct {
 	Name                 string    `bun:"name"`
 	Agency               string    `bun:"agency"`
 	Number               string    `bun:"number"`
-	HolderID             string    `bun:"holder_id"`
+	HolderID             uuid.UUID `bun:"holder_id"`
 	HolderDocumentNumber string    `bun:"holder_document_number,scanonly"`
 	Status               Status    `bun:"status"`
 	CreatedAt            time.Time `bun:"created_at,notnull"`

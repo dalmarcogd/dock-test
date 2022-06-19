@@ -26,7 +26,7 @@ func (s service) List(ctx context.Context, filter ListFilter) (int, []Statement,
 	ctx, span := s.tracer.Span(ctx)
 	defer span.End()
 
-	total, statementModels, err := s.repository.ListByFilter(ctx, statementFilter{
+	total, statementModels, err := s.repository.ListByFilter(ctx, StatementFilter{
 		Page:           filter.Page,
 		Size:           filter.Size,
 		Sort:           filter.Sort,

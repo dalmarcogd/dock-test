@@ -8,7 +8,7 @@ type Holder struct {
 	DocumentNumber string
 }
 
-func newHolder(model holderModel) Holder {
+func newHolder(model HolderModel) Holder {
 	return Holder{
 		ID:             model.ID,
 		Name:           model.Name,
