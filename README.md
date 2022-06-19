@@ -4,10 +4,10 @@ Esta aplicação atende os requisitos oriundos do [teste](https://github.com/cdt
 as persistencias de portador, conta e transações, demais features solicitadas são oriundas destes cadastros.
 
 ## Estrutura de tabelas
-<img align="middle" src=".github/images/img.png">
+<img align="center" src=".github/images/img.png">
 
 ## Arquitetura da aplicação
-<img align="middle" src=".github/images/architecture.png">
+<img align="center" src=".github/images/architecture.png">
 
 - Nestre projeto foi utilizado o [PostgreSQL](https://www.postgresql.org/) como solução de banco de dados, o [Redis](https://redis.io/) foi escolhido para camada de cache 
 e controle de concorrencia([distlock](https://redis.io/docs/reference/patterns/distributed-locks/)).
