@@ -44,9 +44,20 @@ _A migração do banco de dados irá ser executada juntamente com a inicialiçã
 Sugiro utilizar o arquivo exportado do Insomnia, já possui todas os endpoints mapeados com exemplos de utilização.
 [Arquivo](./Insomnia_dock-test.json)
 
-Poré
+Porém para um fluxo consistente, devemos chamar os seguintes endpoints:
+1. POST /v1/holders
+2. POST /v1/accounts
+3. Criar transações
+   1. POST /v1/transactions/credits -> realiza um crédito na conta.
+   2. POST /v1/transactions/debits -> realiza um débito na conta.
+   3. POST /v1/transactions/p2p -> realiza uma transferência entre contas.
+4. GET /v1/accounts/:accountID/statements -> extrato da conta.
+5. GET /v1/accounts/:accountID/balances -> consulta saldo da conta.
 
 ## Curiosidades
-1. Como geramos os mocks para utilização nos testes?
-   - Na pasta ./scripts existe um arquivo shell onde mapeamos os arquivos/interfaces que necessita ser gerado um mock.
-2. 
+1. Como funciona a geração dos mocks utilizados nos testes?
+   - Na pasta ./scripts existe um arquivo shell onde todos os arquivos/interfaces são mapeados para gerar um mock.
+2. Como a migração do banco de dados acontece? 
+   - A migração do banco de dados é feita pelo service database-migration, definido no [docker-compose.yml](./docker-compose.yml).
+3. Como a observabilidade funciona?
+   - Foi utilizado o service OpenTelemetry Collector definido no [docker-compose.yml](./docker-compose.yml), para recepcionar todos os spans e métricas geradas pela aplicação e os trasmite ao Jaeger e Prometheus, respectivamente.
