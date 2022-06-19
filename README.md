@@ -4,7 +4,7 @@ Esta aplicação atende os requisitos oriundos do [teste](https://github.com/cdt
 as persistencias de portador, conta e transações, demais features solicitadas são oriundas destes cadastros.
 
 ## Estrutura de tabelas
-![img.png](.github/images/img.png)
+<img align="middle" src=".github/images/img.png">
 
 ## Arquitetura da aplicação
 ![architecture.png](.github/images/architecture.png)
