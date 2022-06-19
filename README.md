@@ -7,7 +7,7 @@ as persistencias de portador, conta e transações, demais features solicitadas 
 <img align="middle" src=".github/images/img.png">
 
 ## Arquitetura da aplicação
-![architecture.png](.github/images/architecture.png)
+<img align="middle" src=".github/images/architecture.png">
 
 - Nestre projeto foi utilizado o [PostgreSQL](https://www.postgresql.org/) como solução de banco de dados, o [Redis](https://redis.io/) foi escolhido para camada de cache 
 e controle de concorrencia([distlock](https://redis.io/docs/reference/patterns/distributed-locks/)).
