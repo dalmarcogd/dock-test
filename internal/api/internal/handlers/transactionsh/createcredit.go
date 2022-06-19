@@ -52,7 +52,7 @@ func NewCreateCreditTransactionFunc(svc transactions.Service) CreateCreditTransa
 			if errors.Is(err, transactions.ErrToAccountNotfound) {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
-			return echo.NewHTTPError(http.StatusBadRequest, "was not possible to register the transaction")
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 
 		return c.JSON(
