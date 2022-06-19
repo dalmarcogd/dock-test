@@ -49,7 +49,7 @@ func NewCreateCreditTransactionFunc(svc transactions.Service) CreateCreditTransa
 		})
 		if err != nil {
 			zapctx.L(ctx).Error("create_credit_transaction_handler_service_error", zap.Error(err))
-			if errors.Is(err, transactions.ErrToAccountNotfound) {
+			if errors.Is(err, transactions.ErrAccountNotfound) {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())

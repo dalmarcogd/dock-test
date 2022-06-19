@@ -51,7 +51,7 @@ func NewCreateDebitTransactionFunc(svc transactions.Service) CreateDebitTransact
 			zapctx.L(ctx).Error("create_debit_transaction_handler_service_error", zap.Error(err))
 			if errors.Is(err, transactions.ErrBalanceInsufficientFunds) {
 				return echo.NewHTTPError(http.StatusPreconditionFailed, err.Error())
-			} else if errors.Is(err, transactions.ErrFromAccountNotfound) {
+			} else if errors.Is(err, transactions.ErrAccountNotfound) {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
 

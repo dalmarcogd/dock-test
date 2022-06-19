@@ -11,6 +11,7 @@ require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/golang-migrate/migrate/v4 v4.15.2
 	github.com/golang/mock v1.6.0
+	github.com/google/go-cmp v0.5.8
 	github.com/google/uuid v1.3.0
 	github.com/gosidekick/goconfig v1.3.1
 	github.com/labstack/echo/v4 v4.7.2

@@ -62,7 +62,7 @@ func NewCreateP2PTransactionFunc(svc transactions.Service) CreateP2PTransactionF
 			zapctx.L(ctx).Error("create_p2p_transaction_handler_service_error", zap.Error(err))
 			if errors.Is(err, transactions.ErrBalanceInsufficientFunds) {
 				return echo.NewHTTPError(http.StatusPreconditionFailed, err.Error())
-			} else if errors.Is(err, transactions.ErrFromAccountNotfound) || errors.Is(err, transactions.ErrToAccountNotfound) {
+			} else if errors.Is(err, transactions.ErrAccountNotfound) {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			} else if errors.Is(err, transactions.ErrFromAccountToAccountShouldBeDifferent) {
 				return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())

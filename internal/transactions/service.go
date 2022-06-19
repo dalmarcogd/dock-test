@@ -24,11 +24,10 @@ var (
 	ErrFailLockAccount                       = errors.New("was not possible to lock account to process the operation")
 	ErrMultpleTransactionsFound              = errors.New("multiple transactions found with these filters")
 	ErrFromAccountToAccountShouldBeDifferent = errors.New("the from account and to account should not be equal")
-	ErrFromAccountNotfound                   = errors.New("the from account could be found")
-	ErrToAccountNotfound                     = errors.New("the to account could be found")
+	ErrAccountNotfound                       = errors.New("the to account could be found")
 	ErrGetAccountBalance                     = errors.New("received error when get the account balance")
 	ErrBalanceInsufficientFunds              = errors.New("insufficient funds to complete the transaction")
-	ErrAccountInactive                       = errors.New("the account involved in the transaction must be active")
+	ErrAccountInactive                       = errors.New("the account related to the transaction must be active")
 	ErrInsufficientDailyLimit                = errors.New("the account has insufficient daily limit")
 )
 
@@ -132,7 +131,7 @@ func (s service) checkAccount(ctx context.Context, accountID uuid.UUID) error {
 	ctx, span := s.tracer.Span(ctx)
 	defer span.End()
 
-	toAccount, err := s.accountsSvs.GetByID(ctx, accountID)
+	acc, err := s.accountsSvs.GetByID(ctx, accountID)
 	if err != nil {
 		span.RecordError(err)
 
@@ -143,10 +142,10 @@ func (s service) checkAccount(ctx context.Context, accountID uuid.UUID) error {
 				zap.String("account_id", accountID.String()),
 			)
 		}
-		return ErrToAccountNotfound
+		return ErrAccountNotfound
 	}
 
-	if toAccount.Status != accounts.ActiveStatus {
+	if acc.Status != accounts.ActiveStatus {
 		zapctx.L(ctx).Error(
 			"transaction_service_acccount_inactive_error",
 			zap.Error(ErrAccountInactive),
