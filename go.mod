@@ -1,6 +1,5 @@
 module github.com/dalmarcogd/dock-test
 
-// +heroku goVersion go1.18
 go 1.18
 
 require (
