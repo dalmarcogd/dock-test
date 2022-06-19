@@ -4,10 +4,10 @@ Esta aplicação atende os requisitos oriundos do [teste](https://github.com/cdt
 as persistencias de portador, conta e transações, demais features solicitadas são oriundas destes cadastros.
 
 ## Estrutura de tabelas
-<img align="center" src=".github/images/img.png">
+![img.png](.github/images/img.png)
 
 ## Arquitetura da aplicação
-<img align="center" src=".github/images/architecture.png">
+![architecture.png](.github/images/architecture.png)
 
 - Nestre projeto foi utilizado o [PostgreSQL](https://www.postgresql.org/) como solução de banco de dados, o [Redis](https://redis.io/) foi escolhido para camada de cache 
 e controle de concorrencia([distlock](https://redis.io/docs/reference/patterns/distributed-locks/)).
@@ -39,6 +39,16 @@ _A migração do banco de dados irá ser executada juntamente com a inicialiçã
 - jaeger -> [localhost:16686](http://localhost:16686/search)
 - prometheus -> [localhost:9090](http://localhost:9090/graph)
 
+## Como rodar os testes unitários e de integração?
+Unitários:
+```shell
+go test -json -race -tags=unit ./...
+```
+
+Integração:
+```shell
+go test -json -race -tags=integration ./...
+```
 
 ## Como testar?
 Sugiro utilizar o arquivo exportado do Insomnia, já possui todas os endpoints mapeados com exemplos de utilização.
